@@ -112,36 +112,74 @@
   <button class="refresh" onclick="fetchData()">🔄 Refresh</button>
 
   <script>
-    const API_URL ="https://crypto-flow-tracker-1.onrender.com/api/crypto";
+    const API_URL = "https://crypto-flow-tracker-1.onrender.com/api/crypto";
 
     function fmt(n) {
+      if (n === null || n === undefined || n === 0) return "0";
       return Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
+    }
+
+    function fmtChange(n) {
+      if (!n) return "0.00%";
+      const val = Number(n).toFixed(2);
+      return val > 0 ? `+${val}%` : `${val}%`;
     }
 
     async function fetchData() {
       const output = document.getElementById("output");
-      output.innerHTML = '<p class="loading">Loading data...</p>';
+      output.className = "loading";
+      output.innerHTML = "Loading data...";
 
       try {
         const res = await fetch(API_URL);
+
+        if (!res.ok) {
+          throw new Error(`HTTP error: ${res.status}`);
+        }
+
         const coins = await res.json();
+        console.log("API response:", coins);
+
+        if (!coins || coins.length === 0) {
+          output.innerHTML = "No data returned from API.";
+          return;
+        }
 
         output.className = "grid";
         output.innerHTML = coins.map(coin => `
           <div class="card">
             <h2>${coin.symbol}</h2>
-            <div class="row"><span class="label">Price</span><span class="value">$${fmt(coin.price)}</span></div>
-            <div class="row"><span class="label">24h Change</span><span class="value">${fmt(coin.change_24h)}%</span></div>
-            <div class="row"><span class="label">24h High</span><span class="value">$${fmt(coin.high_24h)}</span></div>
-            <div class="row"><span class="label">24h Low</span><span class="value">$${fmt(coin.low_24h)}</span></div>
-            <div class="row"><span class="label">Volume</span><span class="value">$${fmt(coin.volume_24h)}</span></div>
-            <div class="row"><span class="label">Market Cap</span><span class="value">$${fmt(coin.market_cap)}</span></div>
+            <div class="row">
+              <span class="label">Price</span>
+              <span class="value">$${fmt(coin.price)}</span>
+            </div>
+            <div class="row">
+              <span class="label">24h Change</span>
+              <span class="value">${fmtChange(coin.change_24h)}</span>
+            </div>
+            <div class="row">
+              <span class="label">24h High</span>
+              <span class="value">$${fmt(coin.high_24h)}</span>
+            </div>
+            <div class="row">
+              <span class="label">24h Low</span>
+              <span class="value">$${fmt(coin.low_24h)}</span>
+            </div>
+            <div class="row">
+              <span class="label">Volume</span>
+              <span class="value">$${fmt(coin.volume_24h)}</span>
+            </div>
+            <div class="row">
+              <span class="label">Market Cap</span>
+              <span class="value">$${fmt(coin.market_cap)}</span>
+            </div>
             <div class="regime ${coin.regime}">${coin.regime}</div>
           </div>
         `).join("");
 
       } catch (err) {
-        output.innerHTML = `<p class="loading">Error loading data. Is the backend running?</p>`;
+        console.error("Fetch error:", err);
+        output.innerHTML = `Error: ${err.message}`;
       }
     }
 
